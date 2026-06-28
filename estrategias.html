@@ -1,0 +1,186 @@
+<title>Bot de Sinais — Estratégias</title>
+<style>
+  :root{
+    --bg:#0f130e;            /* gramado à noite */
+    --panel:#171d16;
+    --panel-2:#1d2519;
+    --line:rgba(255,255,255,.09);
+    --ink:#ecefe6;
+    --muted:#8c958a;
+    --amber:#f4b83e;         /* cartão */
+    --amber-dim:rgba(244,184,62,.14);
+    --teal:#2fc4c4;          /* chutes */
+    --teal-dim:rgba(47,196,196,.14);
+    --good:#5fcf80;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:
+      radial-gradient(1200px 500px at 50% -10%, #1b241a 0%, var(--bg) 60%);
+    color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:clamp(28px,5vw,64px) clamp(18px,4vw,40px) 64px}
+  .eyebrow{
+    font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--muted);font-weight:700;margin:0 0 14px
+  }
+  h1{
+    font-size:clamp(2rem,5.5vw,3.2rem);line-height:1.04;margin:0 0 14px;
+    font-weight:800;letter-spacing:-.02em;text-wrap:balance
+  }
+  .lead{font-size:clamp(1rem,2.4vw,1.18rem);color:#cdd4c9;max-width:60ch;margin:0}
+  .rule{height:1px;background:var(--line);border:0;margin:36px 0}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  @media(max-width:720px){.grid{grid-template-columns:1fr}}
+
+  .card{
+    background:linear-gradient(180deg,var(--panel) 0%,var(--panel-2) 100%);
+    border:1px solid var(--line);border-radius:16px;
+    padding:26px 24px 28px;position:relative;overflow:hidden
+  }
+  .card::before{content:"";position:absolute;inset:0 auto 0 0;width:4px}
+  .card.cartao::before{background:var(--amber)}
+  .card.chutes::before{background:var(--teal)}
+
+  .tag{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:.74rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    padding:6px 11px;border-radius:999px;margin-bottom:16px
+  }
+  .cartao .tag{background:var(--amber-dim);color:var(--amber)}
+  .chutes .tag{background:var(--teal-dim);color:var(--teal)}
+
+  .card h2{font-size:1.5rem;margin:.1em 0 .15em;font-weight:800;letter-spacing:-.01em}
+  .bet{font-size:1.02rem;color:#dfe4da;margin:0 0 20px}
+  .bet b{font-weight:700}
+  .cartao .bet b{color:var(--amber)}
+  .chutes .bet b{color:var(--teal)}
+
+  .sub{
+    font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--muted);font-weight:700;margin:22px 0 11px
+  }
+  ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+  li{display:flex;gap:11px;align-items:flex-start;font-size:.97rem;color:#d7ddd2}
+  .ck{flex:0 0 auto;width:19px;height:19px;border-radius:6px;margin-top:2px;
+    display:grid;place-items:center;font-size:.7rem;font-weight:800}
+  .cartao .ck{background:var(--amber-dim);color:var(--amber)}
+  .chutes .ck{background:var(--teal-dim);color:var(--teal)}
+  li b{color:#fff;font-weight:700}
+
+  .ex{
+    margin-top:22px;border:1px dashed var(--line);border-radius:11px;
+    padding:13px 15px;background:rgba(0,0,0,.18)
+  }
+  .ex .sub{margin:0 0 7px}
+  .ex p{margin:0;font-size:.92rem;color:#c4cbbf}
+  .ex .num{font-variant-numeric:tabular-nums;color:#fff;font-weight:700}
+
+  .golden{
+    margin-top:24px;border:1px solid var(--line);border-radius:16px;
+    background:linear-gradient(180deg,#1a2017,#141a13);
+    padding:26px 24px;display:flex;gap:18px;align-items:flex-start
+  }
+  .golden .mark{flex:0 0 auto;width:42px;height:42px;border-radius:11px;
+    background:var(--amber-dim);color:var(--amber);display:grid;place-items:center;
+    font-size:1.3rem;font-weight:800}
+  .golden h3{margin:0 0 8px;font-size:1.18rem;font-weight:800}
+  .golden p{margin:0;color:#d3dace;font-size:1rem;max-width:62ch}
+  .golden .odd{font-variant-numeric:tabular-nums;color:var(--amber);font-weight:700}
+  .pill{display:inline-block;padding:1px 8px;border-radius:6px;font-weight:700;font-size:.92rem}
+  .pill.yes{background:rgba(95,207,128,.15);color:var(--good)}
+  .pill.no{background:rgba(255,120,120,.13);color:#ff8a8a}
+
+  .foot{margin-top:34px;color:var(--muted);font-size:.86rem;max-width:64ch}
+  .foot b{color:#c3cbbd}
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Bot de Sinais ao Vivo · Futebol</p>
+  <h1>Como o bot escolhe os sinais</h1>
+  <p class="lead">São duas estratégias rodando ao vivo. Em cada jogo, o bot calcula a
+  probabilidade de cada jogador e manda <b>só o melhor candidato</b> de cada estratégia —
+  quando a chance passa do mínimo.</p>
+
+  <hr class="rule">
+
+  <div class="grid">
+    <!-- CARTÃO -->
+    <div class="card cartao">
+      <span class="tag">🟨 Estratégia 1</span>
+      <h2>Cartão Amarelo</h2>
+      <p class="bet">Aposta: <b>o jogador leva cartão amarelo</b> até o fim do jogo.</p>
+
+      <p class="sub">Requisitos pra virar sinal</p>
+      <ul>
+        <li><span class="ck">✓</span><span>Ainda <b>não levou</b> cartão no jogo</span></li>
+        <li><span class="ck">✓</span><span>Já cometeu <b>2 faltas ou mais</b></span></li>
+        <li><span class="ck">✓</span><span>Chance estimada <b>≥ 40%</b></span></li>
+        <li><span class="ck">✓</span><span>É o jogador de <b>maior chance</b> do jogo</span></li>
+      </ul>
+
+      <p class="sub">O que pesa no cálculo</p>
+      <ul>
+        <li><span class="ck">•</span><span>Quantas faltas já fez e o <b>ritmo</b> delas</span></li>
+        <li><span class="ck">•</span><span><b>Tempo restante</b> de jogo</span></li>
+        <li><span class="ck">•</span><span><b>Ritmo de cartões da partida</b> (árbitro / jogo pegado)</span></li>
+        <li><span class="ck">•</span><span><b>Posição</b>: zagueiro e volante &gt; meia &gt; atacante</span></li>
+      </ul>
+
+      <div class="ex">
+        <p class="sub">Exemplo</p>
+        <p>Volante com <span class="num">3 faltas</span> aos <span class="num">35'</span>,
+        jogo movimentado → chance <span class="num">~40%+</span>.</p>
+      </div>
+    </div>
+
+    <!-- CHUTES -->
+    <div class="card chutes">
+      <span class="tag">🎯 Estratégia 2</span>
+      <h2>1+ Chute a Gol</h2>
+      <p class="bet">Aposta: <b>o jogador dá 1 chute a gol (no alvo) ou mais</b>.</p>
+
+      <p class="sub">Requisitos pra virar sinal</p>
+      <ul>
+        <li><span class="ck">✓</span><span>Ainda <b>não acertou</b> nenhum chute a gol</span></li>
+        <li><span class="ck">✓</span><span>Chance estimada <b>≥ 50%</b></span></li>
+        <li><span class="ck">✓</span><span>É o jogador de <b>maior chance</b> do jogo</span></li>
+      </ul>
+
+      <p class="sub">O que pesa no cálculo</p>
+      <ul>
+        <li><span class="ck">•</span><span><b>Posição</b>: atacante chuta muito mais que defensor</span></li>
+        <li><span class="ck">•</span><span><b>Tempo restante</b> (quanto mais cedo, mais chance)</span></li>
+        <li><span class="ck">•</span><span>Se ele <b>já está finalizando</b> no jogo</span></li>
+      </ul>
+
+      <div class="ex">
+        <p class="sub">Exemplo</p>
+        <p>Atacante sem chute a gol ainda: no <b>início</b> ~<span class="num">77%</span>,
+        aos <span class="num">30'</span> ~<span class="num">63%</span>.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- REGRA DE OURO -->
+  <div class="golden">
+    <div class="mark">💰</div>
+    <div>
+      <h3>A regra de ouro (vale pras duas)</h3>
+      <p>O sinal mostra uma <b>odd mínima</b> (= 1 ÷ chance). Na bet365, ache esse mercado do jogador e compare:
+      se a casa pagar <span class="pill yes">acima do mínimo</span> → vale apostar.
+      Se pagar <span class="pill no">abaixo</span> → pule.
+      <br>Ex.: chance de <span class="odd">50%</span> → odd mínima <span class="odd">2.00</span>.
+      A bet365 pagando 2,20? Vale. Pagando 1,80? Não.</p>
+    </div>
+  </div>
+
+  <p class="foot"><b>Importante:</b> os números são <b>estimativas estatísticas</b> ao vivo
+  (faltas, chutes, posição, árbitro, tempo) — não são garantia. O bot ajuda a achar
+  preço bom e o jogador certo, mas o resultado tem variância. Aposte com responsabilidade,
+  só o que pode perder.</p>
+</div>
