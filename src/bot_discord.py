@@ -106,7 +106,15 @@ class BotSinais(discord.Client):
         if not webhook_url or "/webhooks/" not in webhook_url:
             return
         try:
-            channel_id = int(webhook_url.split("/webhooks/")[1].split("/")[0])
+            import aiohttp
+            async with aiohttp.ClientSession() as session:
+                async with session.get(webhook_url) as resp:
+                    if resp.status != 200:
+                        logger.warning(f"Erro ao buscar metadados do webhook: status {resp.status}")
+                        return
+                    data = await resp.json()
+                    channel_id = int(data["channel_id"])
+                    
             channel = self.get_channel(channel_id)
             if not channel:
                 channel = await self.fetch_channel(channel_id)
