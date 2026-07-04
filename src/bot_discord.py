@@ -29,6 +29,52 @@ from src.pre_match.cache_jogadores import (
 )
 from src.pre_match.analisador import gerar_sinais_time
 
+import unicodedata
+
+def normalizar_texto(texto: str) -> str:
+    if not texto:
+        return ""
+    texto_norm = "".join(
+        c for c in unicodedata.normalize("NFD", texto)
+        if unicodedata.category(c) != "Mn"
+    ).lower()
+    return texto_norm
+
+_TRADUCOES_TIMES = {
+    "franca": "france",
+    "brasil": "brazil",
+    "alemanha": "germany",
+    "espanha": "spain",
+    "belgica": "belgium",
+    "inglaterra": "england",
+    "italia": "italy",
+    "holanda": "netherlands",
+    "marrocos": "morocco",
+    "noruega": "norway",
+    "suecia": "sweden",
+    "suica": "switzerland",
+    "croacia": "croatia",
+    "estados unidos": "united states",
+    "eua": "united states",
+    "turquia": "turkiye",
+    "japao": "japan",
+    "coreia do sul": "south korea",
+    "africa do sul": "south africa",
+    "arabia saudita": "saudi arabia",
+    "paraguai": "paraguay",
+    "uruguai": "uruguay",
+    "equador": "ecuador",
+    "colombia": "colombia",
+}
+
+def corresponder_time(termo_busca: str, nome_time_cache: str) -> bool:
+    if not termo_busca:
+        return True
+    busca_norm = normalizar_texto(termo_busca)
+    cache_norm = normalizar_texto(nome_time_cache)
+    busca_traduzido = _TRADUCOES_TIMES.get(busca_norm, busca_norm)
+    return busca_traduzido in cache_norm or busca_norm in cache_norm
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("bot-discord")
 
@@ -101,13 +147,13 @@ async def cmd_jogos(interaction: discord.Interaction, time: str = None):
         if vivos:
             linhas.append(f"\n**{nome} — AO VIVO**")
             for j in vivos:
-                if time and time.lower() not in j["time_casa"].lower() and time.lower() not in j["time_fora"].lower():
+                if time and not (corresponder_time(time, j["time_casa"]) or corresponder_time(time, j["time_fora"])):
                     continue
                 linhas.append(f"  {j['time_casa']} x {j['time_fora']}  `{j['placar']}`  {j['clock']}")
         if previstos:
             linhas.append(f"\n**{nome} — Proximos**")
             for j in previstos:
-                if time and time.lower() not in j["time_casa"].lower() and time.lower() not in j["time_fora"].lower():
+                if time and not (corresponder_time(time, j["time_casa"]) or corresponder_time(time, j["time_fora"])):
                     continue
                 linhas.append(f"  {j['time_casa']} x {j['time_fora']}")
 
@@ -130,7 +176,7 @@ async def cmd_sinais(interaction: discord.Interaction, time: str = None):
 
     times = resumo["times"]
     if time:
-        times = [t for t in times if time.lower() in t.lower()]
+        times = [t for t in times if corresponder_time(time, t)]
 
     if not times:
         await interaction.followup.send(f"Time '{time}' nao encontrado no cache.")
