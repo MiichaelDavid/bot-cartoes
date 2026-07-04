@@ -183,15 +183,16 @@ async def cmd_sinais(interaction: discord.Interaction, time: str = None):
         return
 
     linhas = []
+    limite = 20 if time else 8
     for t in times[:4]:
         sinais = gerar_sinais_time(t, "?", liga="")
         if sinais:
             linhas.append(f"\n**{t}** — {len(sinais)} sinais")
-            for s in sinais[:3]:
+            for s in sinais[:limite]:
                 ev = f"EV {s['ev']*100:.1f}%" if s.get('ev') is not None else f"fair {s['odd_justa']}"
                 linhas.append(f"  {s['tipo'].upper()}: {s['jogador']} ({s['prob']*100:.0f}%, {ev})")
-            if len(sinais) > 3:
-                linhas.append(f"  ... +{len(sinais)-3} sinais")
+            if len(sinais) > limite:
+                linhas.append(f"  ... +{len(sinais)-limite} sinais")
 
     if not linhas:
         await interaction.followup.send("Nenhum sinal disponivel (cache sem dados suficientes).")
