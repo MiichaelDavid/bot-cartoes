@@ -88,6 +88,7 @@ async def _buscar_jogos_espn(endpoint: str = "fifa.world") -> list:
 @bot.tree.command(name="jogos", description="Mostra os jogos do dia")
 @app_commands.describe(time="Filtrar por time (opcional)")
 async def cmd_jogos(interaction: discord.Interaction, time: str = None):
+    logger.info(f"Comando /jogos recebido de {interaction.user} (time: {time})")
     await interaction.response.defer()
     endpoints = [("fifa.world", "Copa do Mundo"), ("bra.1", "Brasileirao")]
     linhas = []
@@ -120,6 +121,7 @@ async def cmd_jogos(interaction: discord.Interaction, time: str = None):
 @bot.tree.command(name="sinais", description="Mostra sinais pre-jogo disponiveis")
 @app_commands.describe(time="Filtrar por time (opcional)")
 async def cmd_sinais(interaction: discord.Interaction, time: str = None):
+    logger.info(f"Comando /sinais recebido de {interaction.user} (time: {time})")
     await interaction.response.defer()
     resumo = resumo_cache()
     if resumo["jogadores"] == 0:
@@ -157,6 +159,7 @@ async def cmd_sinais(interaction: discord.Interaction, time: str = None):
 @bot.tree.command(name="stats", description="Estatisticas de um jogador no torneio")
 @app_commands.describe(jogador="Nome do jogador")
 async def cmd_stats(interaction: discord.Interaction, jogador: str):
+    logger.info(f"Comando /stats recebido de {interaction.user} (jogador: {jogador})")
     await interaction.response.defer()
     med = medias_jogador(jogador, ultimas_n=5)
     if not med:
@@ -177,6 +180,7 @@ async def cmd_stats(interaction: discord.Interaction, jogador: str):
 
 @bot.tree.command(name="proximos", description="Proximos jogos (Copa + Brasileirao)")
 async def cmd_proximos(interaction: discord.Interaction):
+    logger.info(f"Comando /proximos recebido de {interaction.user}")
     await interaction.response.defer()
     endpoints = [("fifa.world", "Copa do Mundo"), ("bra.1", "Brasileirao Serie A")]
     linhas = []
@@ -199,6 +203,7 @@ async def cmd_proximos(interaction: discord.Interaction):
 
 @bot.tree.command(name="cache", description="Status do cache de jogadores")
 async def cmd_cache(interaction: discord.Interaction):
+    logger.info(f"Comando /cache recebido de {interaction.user}")
     resumo = resumo_cache()
     top = top_jogadores(n=5)
     desc = (f"Jogadores no cache: **{resumo['jogadores']}**\n"
@@ -215,6 +220,7 @@ async def cmd_cache(interaction: discord.Interaction):
 
 @bot.tree.command(name="ajuda", description="Lista de comandos do bot")
 async def cmd_ajuda(interaction: discord.Interaction):
+    logger.info(f"Comando /ajuda recebido de {interaction.user}")
     desc = (
         "**/jogos** `[time]` — Jogos do dia (ao vivo + proximos)\n"
         "**/sinais** `[time]` — Sinais pre-jogo com odds\n"
