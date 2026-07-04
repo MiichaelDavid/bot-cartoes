@@ -30,18 +30,32 @@ _CAMINHO = os.path.abspath(os.path.join(
 ))
 
 
+_dados_cache = None
+
+
+def limpar_cache_memoria():
+    global _dados_cache
+    _dados_cache = None
+
+
 def _carregar() -> dict:
+    global _dados_cache
+    if _dados_cache is not None:
+        return _dados_cache
     if not os.path.exists(_CAMINHO):
         return {}
     try:
         with open(_CAMINHO, "r", encoding="utf-8") as f:
-            return json.load(f)
+            _dados_cache = json.load(f)
+            return _dados_cache
     except (json.JSONDecodeError, Exception) as e:
         logger.warning(f"Cache corrompido, resetando: {e}")
         return {}
 
 
 def _salvar(cache: dict):
+    global _dados_cache
+    _dados_cache = cache
     with open(_CAMINHO, "w", encoding="utf-8") as f:
         json.dump(cache, f, ensure_ascii=False, indent=2)
 
