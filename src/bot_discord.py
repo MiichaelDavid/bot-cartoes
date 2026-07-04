@@ -84,6 +84,9 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 
+from discord.ext import tasks
+import datetime
+
 class BotSinais(discord.Client):
     def __init__(self):
         super().__init__(intents=intents)
@@ -92,9 +95,33 @@ class BotSinais(discord.Client):
     async def setup_hook(self):
         await self.tree.sync()
         logger.info(f"Comandos sincronizados: {len(self.tree.get_commands())}")
+        self.limpar_mensagens_antigas.start()
 
     async def on_ready(self):
         logger.info(f"Bot conectado como {self.user} (ID: {self.user.id})")
+
+    @tasks.loop(minutes=30)
+    async def limpar_mensagens_antigas(self):
+        webhook_url = config.DISCORD_WEBHOOK_URL
+        if not webhook_url or "/webhooks/" not in webhook_url:
+            return
+        try:
+            channel_id = int(webhook_url.split("/webhooks/")[1].split("/")[0])
+            channel = self.get_channel(channel_id)
+            if not channel:
+                channel = await self.fetch_channel(channel_id)
+            
+            limite_tempo = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=config.DISCORD_CLEAN_HOURS)
+            
+            # Deleta mensagens com mais de X horas
+            def check(msg):
+                return msg.created_at < limite_tempo
+                
+            deleted = await channel.purge(limit=100, check=check, before=limite_tempo)
+            if deleted:
+                logger.info(f"[LIMPEZA] Apagadas {len(deleted)} mensagens com mais de {config.DISCORD_CLEAN_HOURS}h no canal {channel_id}")
+        except Exception as e:
+            logger.warning(f"Erro na limpeza automatica de mensagens: {e}")
 
 
 bot = BotSinais()

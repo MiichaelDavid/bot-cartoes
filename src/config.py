@@ -57,3 +57,7 @@ LIGAS_FILTRO = [s.strip().lower() for s in
 
 # Média de amarelos/jogo de um árbitro "neutro" (referência do modelo)
 ARBITRO_MEDIA_PADRAO = _f("ARBITRO_MEDIA_PADRAO", 3.8)
+
+# Tempo (em horas) para limpar mensagens antigas do canal de sinais
+DISCORD_CLEAN_HOURS = int(_f("DISCORD_CLEAN_HOURS", 24))
+
