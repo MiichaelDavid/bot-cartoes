@@ -34,7 +34,8 @@ ARQUIVOS_A_INCLUIR = [
     "requirements.txt",
     "bot-cartoes.service",
     "bot-copa.service",
-    "bot-discord.service"
+    "bot-discord.service",
+    "bot-pre.service"
 ]
 
 def print_banner(msg):
@@ -201,20 +202,23 @@ def realizar_deploy():
     print("[+] Dependências instaladas com sucesso.")
 
     # 5. Configurar e reiniciar o Serviço Systemd
-    print_banner("5/5: Configurando os serviços do Systemd (Clubes + Copa + Discord)...")
+    print_banner("5/5: Configurando os serviços do Systemd (Clubes + Copa + Discord + Pré-Jogo)...")
     cmd_service = (
         f"sudo cp {DESTINO}/bot-cartoes.service /etc/systemd/system/bot-cartoes.service && "
         f"sudo cp {DESTINO}/bot-copa.service /etc/systemd/system/bot-copa.service && "
         f"sudo cp {DESTINO}/bot-discord.service /etc/systemd/system/bot-discord.service && "
+        f"sudo cp {DESTINO}/bot-pre.service /etc/systemd/system/bot-pre.service && "
         f"sudo systemctl daemon-reload && "
-        f"sudo systemctl enable bot-cartoes bot-copa bot-discord && "
-        f"sudo systemctl restart bot-cartoes bot-copa bot-discord && "
+        f"sudo systemctl enable bot-cartoes bot-copa bot-discord bot-pre && "
+        f"sudo systemctl restart bot-cartoes bot-copa bot-discord bot-pre && "
         f"sleep 2 && "
         f"sudo systemctl status bot-cartoes --no-pager -l && "
         f"echo '----------------------------------------' && "
         f"sudo systemctl status bot-copa --no-pager -l && "
         f"echo '----------------------------------------' && "
-        f"sudo systemctl status bot-discord --no-pager -l"
+        f"sudo systemctl status bot-discord --no-pager -l && "
+        f"echo '----------------------------------------' && "
+        f"sudo systemctl status bot-pre --no-pager -l"
     )
     ok, output_status = executar_comando_ssh(ip, cmd_service, "Falha ao configurar/reiniciar serviços.")
     if not ok:
