@@ -31,3 +31,7 @@ deploy.zip
 *.njsproj
 *.sln
 *.swp
+
+# Dynamic cache file
+player_stats_cache.json
+
