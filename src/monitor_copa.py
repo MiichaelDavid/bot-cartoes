@@ -1,15 +1,16 @@
 """
-Monitor STANDALONE para a Copa do Mundo 2026.
+Monitor STANDALONE para a Copa do Mundo 2026 (AO VIVO).
 
 USO:
     python src/monitor_copa.py
 
 Funciona 100% pela ESPN (keyless, ilimitado). Dispara sinais de cartão
-amarelo e chutes a gol no Discord e WhatsApp.
+amarelo e chutes a gol no Discord e WhatsApp durante os jogos.
 
-INDEPENDENTE do monitor.py (que cuida dos clubes). Pode rodar junto ou
-separado. Quando a Copa acabar, é só parar este processo — o bot dos
-clubes continua intacto.
+TAMBÉM ALIMENTA O CACHE DE JOGADORES para o analisador pré-jogo:
+    python src/monitor_copa_pre.py
+
+INDEPENDENTE do monitor.py (clubes). Quando a Copa acabar, pare só este.
 """
 import time
 import json
@@ -25,6 +26,13 @@ from src.models.chutes import prob_chutes_gol
 from src.services.whatsapp import enviar_whatsapp
 from src.services.discord_notifier import enviar_discord
 from src.utils.registro import registrar_sinal
+
+try:
+    from src.pre_match.cache_jogadores import adicionar_partida
+    _CACHE_DISPONIVEL = True
+except ImportError:
+    _CACHE_DISPONIVEL = False
+    adicionar_partida = None
 
 logging.basicConfig(
     level=logging.INFO,
@@ -143,6 +151,46 @@ def _avaliar_jogo(jogo: dict, jogadores: list):
                   f"{jg['nome']} dá {meta}+ chute(s) a gol", motivo, meta=meta)
 
 
+_jogos_vistos = {}  # jogo_id -> minuto_anterior (p/ detectar fim)
+
+
+def _atualizar_cache_se_terminou(jogo: dict, jogadores: list):
+    """Se o jogo terminou (>=85 min ou nao tem mais stats), salva no cache."""
+    jid = jogo["id"]
+    minuto = jogo.get("minuto", 0) or 0
+    anterior = _jogos_vistos.get(jid, 0)
+
+    terminou = False
+    if minuto >= 85:
+        import random
+        if anterior < 85:
+            logger.info(f"[CACHE] Jogo {jogo['time_casa']}x{jogo['time_fora']} "
+                        f"atingiu {minuto}' — preparando cache")
+        elif minuto == anterior and anterior >= 85:
+            terminou = True
+
+    if minuto >= 90 or (terminou and jogadores):
+        if _CACHE_DISPONIVEL and jid not in getattr(_atualizar_cache_se_terminou, "_ja_cacheados", set()):
+            if not hasattr(_atualizar_cache_se_terminou, "_ja_cacheados"):
+                _atualizar_cache_se_terminou._ja_cacheados = set()
+            _atualizar_cache_se_terminou._ja_cacheados.add(jid)
+            try:
+                metade = len(jogadores) // 2
+                jogadores_casa = jogadores[:metade]
+                jogadores_fora = jogadores[metade:]
+                adicionar_partida(
+                    jid, jogo["time_casa"], jogo["time_fora"],
+                    jogadores_casa, jogadores_fora,
+                    minuto_final=min(minuto, 95),
+                )
+                logger.info(f"[CACHE] Stats salvos: {len(jogadores)} jogadores de "
+                            f"{jogo['time_casa']}x{jogo['time_fora']}")
+            except Exception as e:
+                logger.error(f"[CACHE] Erro ao salvar: {e}")
+
+    _jogos_vistos[jid] = minuto
+
+
 def loop():
     import src.sources.copa as copa
     _carregar_sinais_salvos()
@@ -165,6 +213,7 @@ def loop():
                     logger.info(f"[COPA] {jogo['time_casa']}x{jogo['time_fora']} — "
                                 f"{len(jogadores)} jogadores c/ stats, min {jogo['minuto']}'")
                     _avaliar_jogo(jogo, jogadores)
+                    _atualizar_cache_se_terminou(jogo, jogadores)
                 n_vivos = len(jogos)
             else:
                 logger.info("[COPA] Nenhum jogo ao vivo agora")
