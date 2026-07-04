@@ -33,7 +33,8 @@ ARQUIVOS_A_INCLUIR = [
     "src",
     "requirements.txt",
     "bot-cartoes.service",
-    "bot-copa.service"
+    "bot-copa.service",
+    "bot-discord.service"
 ]
 
 def print_banner(msg):
@@ -70,7 +71,7 @@ def obter_ip_servidor():
     try:
         with open(".env", "a", encoding="utf-8") as f:
             f.write(f"\nSERVER_IP={ip}\n")
-        print(f"[+] IP {ip} salvo no arquivo .env para os próximos deploys.")
+        print(f"[+] IP {ip} Salvo no arquivo .env para os próximos deploys.")
     except Exception as e:
         print(f"[!] Não foi possível salvar o IP no .env: {e}")
         
@@ -172,7 +173,18 @@ def realizar_deploy():
         else:
             print("[AVISO] Nenhum arquivo .env local encontrado para enviar. Certifique-se de criá-lo manualmente no servidor.")
     else:
-        print("[+] Arquivo .env já existe no servidor. Preservado para evitar perda de chaves de API.")
+        # Envia o arquivo .env de qualquer forma para atualizar os tokens/regras
+        print("[*] Atualizando o arquivo .env no servidor...")
+        cmd_scp_env = [
+            "scp", "-i", CHAVE_SSH,
+            "-o", "StrictHostKeyChecking=no",
+            ".env", f"{USER}@{ip}:{DESTINO}/.env"
+        ]
+        res = subprocess.run(cmd_scp_env)
+        if res.returncode == 0:
+            print("[+] Arquivo .env atualizado com sucesso no servidor.")
+        else:
+            print("[AVISO] Falha ao atualizar .env via SCP.")
 
     # 4. Configurar dependências e Virtual Environment
     print_banner("4/5: Configurando dependências no servidor...")
@@ -189,21 +201,25 @@ def realizar_deploy():
     print("[+] Dependências instaladas com sucesso.")
 
     # 5. Configurar e reiniciar o Serviço Systemd
-    print_banner("5/5: Configurando os serviços do Systemd (Clubes + Copa)...")
+    print_banner("5/5: Configurando os serviços do Systemd (Clubes + Copa + Discord)...")
     cmd_service = (
         f"sudo cp {DESTINO}/bot-cartoes.service /etc/systemd/system/bot-cartoes.service && "
         f"sudo cp {DESTINO}/bot-copa.service /etc/systemd/system/bot-copa.service && "
+        f"sudo cp {DESTINO}/bot-discord.service /etc/systemd/system/bot-discord.service && "
         f"sudo systemctl daemon-reload && "
-        f"sudo systemctl enable bot-cartoes bot-copa && "
-        f"sudo systemctl restart bot-cartoes bot-copa && "
+        f"sudo systemctl enable bot-cartoes bot-copa bot-discord && "
+        f"sudo systemctl restart bot-cartoes bot-copa bot-discord && "
         f"sleep 2 && "
         f"sudo systemctl status bot-cartoes --no-pager -l && "
         f"echo '----------------------------------------' && "
-        f"sudo systemctl status bot-copa --no-pager -l"
+        f"sudo systemctl status bot-copa --no-pager -l && "
+        f"echo '----------------------------------------' && "
+        f"sudo systemctl status bot-discord --no-pager -l"
     )
     ok, output_status = executar_comando_ssh(ip, cmd_service, "Falha ao configurar/reiniciar serviços.")
     if not ok:
         sys.exit(1)
+
         
     print_banner("Deploy Concluído com Sucesso! Status do Bot:")
     try:
