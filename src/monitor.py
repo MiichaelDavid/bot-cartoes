@@ -10,12 +10,18 @@ Rodar:  py monitor.py
 import time
 import logging
 
-import config
-from cartoes import probabilidade_cartao, ritmo_cartoes_jogo
-from chutes import prob_chutes_gol
-from whatsapp import enviar_whatsapp
-from discord_notifier import enviar_discord
-from registro import registrar_sinal
+import os
+import sys
+
+# Garante que o diretório raiz esteja no path do Python
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+import src.config as config
+from src.models.cartoes import probabilidade_cartao, ritmo_cartoes_jogo
+from src.models.chutes import prob_chutes_gol
+from src.services.whatsapp import enviar_whatsapp
+from src.services.discord_notifier import enviar_discord
+from src.utils.registro import registrar_sinal
 
 logging.basicConfig(
     level=logging.INFO,
@@ -25,6 +31,36 @@ logging.basicConfig(
 logger = logging.getLogger("bot-cartoes")
 
 _ja_avisados = set()   # (jogo_id, jogador) já notificados — evita spam
+
+
+def _carregar_sinais_salvos():
+    """Lê sinais_log.jsonl e preenche _ja_avisados para evitar spam em caso de reinicialização."""
+    import os
+    import json
+    arq_caminho = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "sinais_log.jsonl"))
+    if not os.path.exists(arq_caminho):
+        return
+    try:
+        cont = 0
+        with open(arq_caminho, "r", encoding="utf-8") as f:
+            for linha in f:
+                linha = linha.strip()
+                if not linha:
+                    continue
+                try:
+                    dado = json.loads(linha)
+                    fixture_id = dado.get("fixture_id")
+                    jogador = dado.get("jogador")
+                    tipo = dado.get("tipo", "cartao")
+                    if fixture_id and jogador:
+                        _ja_avisados.add((fixture_id, jogador, tipo))
+                        cont += 1
+                except Exception:
+                    continue
+        if cont > 0:
+            logger.info(f"Carregados {cont} sinais anteriores de sinais_log.jsonl para evitar duplicados.")
+    except Exception as e:
+        logger.error(f"Erro ao carregar sinais anteriores: {e}")
 
 
 def _disparar(tipo: str, jogo: dict, jg: dict, prob: float,
@@ -95,7 +131,7 @@ def _avaliar_jogo(jogo: dict, jogadores: list):
 
 def _ciclo_apifootball() -> int:
     """Roda um ciclo. Retorna o nº de jogos ao vivo (p/ ajustar o intervalo)."""
-    import apifootball as fonte
+    import src.sources.apifootball as fonte
     jogos = fonte.jogos_ao_vivo(config.LIGAS_FILTRO)
     logger.info(f"[API-Football] {len(jogos)} jogos relevantes ao vivo "
                 f"(filtro: {config.LIGAS_FILTRO or 'todas'})")
@@ -107,7 +143,7 @@ def _ciclo_apifootball() -> int:
 
 def _ciclo_espn() -> int:
     """Ciclo via ESPN (clubes, SEM LIMITE de cota)."""
-    import espn as fonte
+    import src.sources.espn as fonte
     jogos = fonte.jogos_ao_vivo(config.LIGAS_ESPN)
     logger.info(f"[ESPN] {len(jogos)} jogos ao vivo (ligas: {config.LIGAS_ESPN})")
     for jogo in jogos:
@@ -117,10 +153,11 @@ def _ciclo_espn() -> int:
 
 
 def loop():
+    _carregar_sinais_salvos()
     logger.info(f"Bot de Cartões iniciado | fonte={config.FONTE_FALTAS} | "
                 f"prob_min={config.PROB_MINIMA:.0%} | varre a cada {config.INTERVALO_SEG}s")
     if config.FONTE_FALTAS == "hibrido":
-        import espn as _espn
+        import src.sources.espn as _espn
         ultimo_af = -1e9   # última vez que chamou a API-Football (monotonic)
         logger.info("Modo HÍBRIDO: ESPN (clubes, ilimitado) + API-Football (só Copa ao vivo)")
         while True:

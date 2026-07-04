@@ -4,7 +4,11 @@ Recebe um dict já pronto e só monta o banner claro.
 """
 import logging
 import requests
-import config
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
+import src.config as config
 
 logger = logging.getLogger(__name__)
 COR = {"cartao": 0xF1C40F, "chutes": 0x3498DB}   # amarelo / azul

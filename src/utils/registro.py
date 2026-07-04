@@ -8,15 +8,18 @@ Registro e conferência dos sinais (calibração).
 Rodar a conferência:  py registro.py
 """
 import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
 import json
 import logging
 from datetime import datetime
 
 import requests
-import config
+import src.config as config
 
 logger = logging.getLogger(__name__)
-ARQ = os.path.join(os.path.dirname(__file__), "sinais_log.jsonl")
+ARQ = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "sinais_log.jsonl"))
 FINALIZADOS = {"FT", "AET", "PEN"}
 
 

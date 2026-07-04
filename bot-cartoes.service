@@ -1,0 +1,17 @@
+[Unit]
+Description=Bot de Cartões e Chutes - Futebol ao Vivo
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/bot-cartoes
+ExecStart=/home/ubuntu/bot-cartoes/venv/bin/python src/monitor.py
+Restart=always
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=bot-cartoes
+
+[Install]
+WantedBy=multi-user.target

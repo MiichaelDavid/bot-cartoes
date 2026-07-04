@@ -1,0 +1,33 @@
+# Python virtual environments
+venv/
+env/
+.venv/
+ENV/
+
+# Python cache & compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local environment configuration
+.env
+projeto_e_servidor.md
+
+# Dynamic/runtime logs & signs data
+sinais_log.jsonl
+bot.log
+bot.out.log
+*.log
+
+# Deployment artifacts
+deploy.zip
+
+# IDE configurations
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
