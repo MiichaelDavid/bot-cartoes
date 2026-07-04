@@ -119,6 +119,17 @@ def _buscar_proximos_jogos_espn() -> list:
                 comp = (e.get("competitions") or [{}])[0]
                 status = comp.get("status", {}).get("type", {}).get("state", "")
                 if status in ("pre", "scheduled"):
+                    date_str = e.get("date") or comp.get("date")
+                    if date_str:
+                        try:
+                            from datetime import datetime, timezone, timedelta
+                            dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+                            agora = datetime.now(timezone.utc)
+                            if not (timedelta(seconds=0) < dt - agora <= timedelta(hours=36)):
+                                continue
+                        except Exception as date_err:
+                            logger.warning(f"Erro ao filtrar data {date_str}: {date_err}")
+
                     cs = comp.get("competitors", [])
                     home = next((c for c in cs if c.get("homeAway") == "home"), {})
                     away = next((c for c in cs if c.get("homeAway") == "away"), {})
