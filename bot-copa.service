@@ -1,0 +1,17 @@
+[Unit]
+Description=Bot de Cartões e Chutes - Copa do Mundo 2026
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/bot-cartoes
+ExecStart=/home/ubuntu/bot-cartoes/venv/bin/python src/monitor_copa.py
+Restart=always
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=bot-copa
+
+[Install]
+WantedBy=multi-user.target

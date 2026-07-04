@@ -1,11 +1,14 @@
 """
-Monitor em tempo real do Bot de Cartões.
+Monitor em tempo real do Bot de Cartões — CLUBES (Brasileirão, Premier, LaLiga...).
 
 Varre os jogos ao vivo de tempos em tempos, calcula a probabilidade de cartão
-de cada jogador (faltas + árbitro + posição + tempo) e manda no WhatsApp quem
-passar do limiar. Funciona com API-Football (estável) ou SofaScore (Playwright).
+de cada jogador (faltas + árbitro + posição + tempo) e manda no WhatsApp/Discord
+quem passar do limiar.
 
-Rodar:  py monitor.py
+Rodar:  python src/monitor.py
+
+Para a COPA DO MUNDO, rode separadamente (standalone, keyless, via ESPN):
+        python src/monitor_copa.py
 """
 import time
 import logging

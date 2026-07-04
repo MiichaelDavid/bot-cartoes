@@ -3,10 +3,10 @@ Fonte de dados: API escondida da ESPN — KEYLESS e SEM LIMITE diário.
 
 Dá faltas cometidas (FC) e cartões (YC/RC) POR JOGADOR, ao vivo, para as
 competições de CLUBES que a ESPN cobre em detalhe (Premier, La Liga, Serie A,
-Bundesliga, Ligue 1, Champions, Europa League...).
+Bundesliga, Ligue 1, Champions, Europa League...) e também para a COPA DO MUNDO.
 
-⚠️ A ESPN NÃO tem stats por jogador da Copa do Mundo (só nível de time) — pra
-   Copa, use a fonte API-Football. Por isso o bot tem as duas.
+Para a Copa, use o módulo src/sources/copa.py (mesma ESPN, código fifa.world)
+ou rode o monitor standalone: python src/monitor_copa.py
 """
 import re
 import logging

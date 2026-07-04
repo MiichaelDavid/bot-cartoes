@@ -32,7 +32,8 @@ ARQUIVO_ZIP = "deploy.zip"
 ARQUIVOS_A_INCLUIR = [
     "src",
     "requirements.txt",
-    "bot-cartoes.service"
+    "bot-cartoes.service",
+    "bot-copa.service"
 ]
 
 def print_banner(msg):
@@ -188,16 +189,19 @@ def realizar_deploy():
     print("[+] Dependências instaladas com sucesso.")
 
     # 5. Configurar e reiniciar o Serviço Systemd
-    print_banner("5/5: Configurando o serviço do Systemd...")
+    print_banner("5/5: Configurando os serviços do Systemd (Clubes + Copa)...")
     cmd_service = (
         f"sudo cp {DESTINO}/bot-cartoes.service /etc/systemd/system/bot-cartoes.service && "
+        f"sudo cp {DESTINO}/bot-copa.service /etc/systemd/system/bot-copa.service && "
         f"sudo systemctl daemon-reload && "
-        f"sudo systemctl enable bot-cartoes && "
-        f"sudo systemctl restart bot-cartoes && "
+        f"sudo systemctl enable bot-cartoes bot-copa && "
+        f"sudo systemctl restart bot-cartoes bot-copa && "
         f"sleep 2 && "
-        f"sudo systemctl status bot-cartoes --no-pager -l"
+        f"sudo systemctl status bot-cartoes --no-pager -l && "
+        f"echo '----------------------------------------' && "
+        f"sudo systemctl status bot-copa --no-pager -l"
     )
-    ok, output_status = executar_comando_ssh(ip, cmd_service, "Falha ao configurar/reiniciar serviço.")
+    ok, output_status = executar_comando_ssh(ip, cmd_service, "Falha ao configurar/reiniciar serviços.")
     if not ok:
         sys.exit(1)
         

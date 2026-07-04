@@ -1,11 +1,12 @@
 """
 Registro e conferência dos sinais (calibração).
 
-- registrar_sinal(): grava cada sinal disparado em sinais_log.jsonl
-- conferir():        depois dos jogos, checa se o jogador REALMENTE levou cartão
-                     e mostra a taxa de acerto vs a probabilidade prevista.
+- registrar_sinal():                grava cada sinal disparado em sinais_log.jsonl
+- conferir():                        depois dos jogos (via API-Football), checa resultado
+- conferir_copa():                   idem para Copa (via ESPN, keyless)
+- conferir():                        auto-detecção da fonte
 
-Rodar a conferência:  py registro.py
+Rodar a conferência:  py src/utils/registro.py
 """
 import os
 import sys
@@ -20,6 +21,7 @@ import src.config as config
 
 logger = logging.getLogger(__name__)
 ARQ = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "sinais_log.jsonl"))
+ARQ_COPA = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "sinais_log_copa.jsonl"))
 FINALIZADOS = {"FT", "AET", "PEN"}
 
 
@@ -105,6 +107,74 @@ def conferir():
         print("Nenhum sinal conferido ainda (jogos podem não ter terminado).")
 
 
+def _conferir_copa_espn(fixture_id, jogador: str, tipo: str, meta: int = 1):
+    """Confere resultado de sinal da Copa via ESPN (keyless)."""
+    try:
+        H = {"User-Agent": "Mozilla/5.0"}
+        BASE = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world"
+        j = requests.get(f"{BASE}/summary", params={"event": fixture_id},
+                         headers=H, timeout=25).json()
+    except Exception:
+        return False, None
+    comp = (j.get("header") or {}).get("competitions") or [{}]
+    status = (comp[0].get("status") or {}).get("type", {}).get("state", "")
+    if status not in ("post", "finished"):
+        return False, None
+    for t in j.get("rosters", []):
+        for p in t.get("roster", []):
+            if p.get("athlete", {}).get("displayName") == jogador:
+                st = {s.get("abbreviation"): s.get("value") for s in (p.get("stats") or [])}
+                if tipo == "chutes":
+                    return True, (int(st.get("SOG") or 0) >= (meta or 1))
+                return True, (int(st.get("YC") or 0) > 0)
+    return True, False
+
+
+def _ler_copa():
+    if not os.path.exists(ARQ_COPA):
+        return []
+    with open(ARQ_COPA, encoding="utf-8") as f:
+        return [json.loads(l) for l in f if l.strip()]
+
+
+def _gravar_copa(regs: list):
+    with open(ARQ_COPA, "w", encoding="utf-8") as f:
+        for r in regs:
+            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+
+
+def conferir_copa():
+    """Confere sinais da Copa via ESPN (keyless, usa sinais_log_copa.jsonl)."""
+    regs = _ler_copa()
+    pendentes = [r for r in regs if r["resultado"] is None and r.get("fixture_id")]
+    logger.info(f"[COPA] {len(pendentes)} sinais pendentes de conferência")
+    for r in pendentes:
+        try:
+            fim, ok = _conferir_copa_espn(r["fixture_id"], r["jogador"],
+                                          r.get("tipo", "cartao"), r.get("meta") or 1)
+            if fim:
+                r["resultado"] = bool(ok)
+                logger.info(f"  [COPA {r.get('tipo')}] {r['jogador']}: {'ACONTECEU ✅' if ok else 'não ❌'}")
+        except Exception as e:
+            logger.error(f"erro conferindo {r['jogador']}: {e}")
+    _gravar_copa(regs)
+
+    conferidos = [r for r in regs if r["resultado"] is not None]
+    if conferidos:
+        n = len(conferidos)
+        acertos = sum(1 for r in conferidos if r["resultado"])
+        prob_media = sum(r["prob"] for r in conferidos) / n
+        print("\n=== CALIBRAÇÃO COPA ===")
+        print(f"Sinais conferidos: {n}")
+        print(f"Aconteceram de fato: {acertos}/{n} = {acertos/n*100:.0f}%")
+        print(f"Probabilidade média prevista: {prob_media*100:.0f}%")
+    else:
+        print("Nenhum sinal da Copa conferido ainda.")
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-    conferir()
+    if len(sys.argv) > 1 and sys.argv[1] == "copa":
+        conferir_copa()
+    else:
+        conferir()
